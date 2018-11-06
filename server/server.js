@@ -20,16 +20,24 @@ io.on('connection', (socket)=>{
   console.log('New User connected');
 
 socket.on('join',(params, callback)=>{
-  if(!isRealString(params.name)|| !isRealString(params.room)){
+  if(!isRealString(params.name)|| !isRealString(params.room) ){
     return callback('Name and room are required.');
   }
 
-  socket.join(params.room);
+  //Function For proper title
+var currentUsers = users.getUserList(params.room);
+if(currentUsers.includes(params.name))
+{
+  return callback(`The chat username '${params.name}'is already taken.`);
+}
+
+
+  socket.join(params.room.toLowerCase());
   users.removeUser(socket.id);
-  users.addUser(socket.id, params.name,params.room);
+  users.addUser(socket.id, params.name,params.room.toLowerCase());
 
 
-  io.to(params.room).emit('updateUserList',users.getUserList(params.room));
+  io.to(params.room.toLowerCase()).emit('updateUserList',users.getUserList(params.room.toLowerCase()));
 
 
 
@@ -40,7 +48,7 @@ socket.on('join',(params, callback)=>{
   //Socket.broadcast.emit-> socket.broadcast.to('The office Fans').emit
 
   socket.emit('newMessage',generateMessage('admin', 'welcome to chat app'));
-  socket.broadcast.to(params.room).emit('newMessage',generateMessage('admin',`${params.name} has joined room joined ${params.room}`));
+  socket.broadcast.to(params.room.toLowerCase()).emit('newMessage',generateMessage('admin',`${params.name} has joined room joined ${params.room.toLowerCase()}`));
 
   callback();
 });
@@ -51,7 +59,7 @@ socket.on('createMessage',(newMessage,callback)=>{
 
   if(user && isRealString(newMessage.text))
   {
-      io.to(user.room).emit('newMessage',generateMessage(user.name, newMessage.text));
+      io.to(user.room.toLowerCase()).emit('newMessage',generateMessage(user.name, newMessage.text));
   }
 
   callback();
@@ -62,7 +70,7 @@ socket.on('createMessage',(newMessage,callback)=>{
 
     if(user)
     {
-          io.to(user.room).emit('newLocationMessage',generateLocationMessage(user.name,coords.latitude, coords.longitude));
+          io.to(user.room.toLowerCase()).emit('newLocationMessage',generateLocationMessage(user.name,coords.latitude, coords.longitude));
     }
 
   });
@@ -72,8 +80,8 @@ socket.on('createMessage',(newMessage,callback)=>{
 
     if(user)
     {
-      io.to(user.room).emit('updateUserList', users.getUserList(user.room));
-      io.to(user.room).emit('newMessage',generateMessage('Admin', `${user.name} has left.`))
+      io.to(user.room.toLowerCase()).emit('updateUserList', users.getUserList(user.room.toLowerCase()));
+      io.to(user.room.toLowerCase()).emit('newMessage',generateMessage('Admin', `${user.name} has left.`))
     }
   })
 });
